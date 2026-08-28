@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { SafeAreaView, View, Text, FlatList } from 'react-native';
+import { SafeAreaView, View, Text, FlatList, StyleSheet } from 'react-native';
 
 import { ref, get, onValue } from 'firebase/database';
 import database from '../../config/firebaseconfig';
@@ -24,7 +24,16 @@ export default function Rotas({ navigation }) {
     }, []);
 
     return (
-        <View>
+        <View style={styles.container}>
+            <View style={styles.listFilter}>
+                <TouchableOpacity style={StyleSheet.compose(styles.filter, styles.filterSelected)}>
+                    <Text>Todos</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.filter}>
+                    <Text>Meu</Text>
+                </TouchableOpacity>
+            </View>
+
             <FlatList
                 showsVerticalScrollIndicator={false}
                 data={rotas}

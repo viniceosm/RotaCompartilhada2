@@ -4,12 +4,54 @@ import MapView, { Marker, Polyline } from 'react-native-maps';
 const mapRef = React.createRef();
 
 import * as Location from 'expo-location';
+import * as TaskManager from 'expo-task-manager';
 
 import { ref, get, onValue } from 'firebase/database';
 import database from '../../config/firebaseconfig';
 
 import axios from 'axios';
 import styles from './style';
+
+TaskManager.defineTask('backgroundLocationUpdate', async ({ data, error }) => {
+    if (error) {
+        console.error('Erro ao obter localização em segundo plano:', error);
+        return;
+    }
+
+    const { locations } = data;
+    if (locations && locations.length > 0) {
+        const { latitude, longitude } = locations[0].coords;
+        console.log('Localização em segundo plano:', { latitude, longitude });
+        // Faça o que precisar com as coordenadas
+    }
+});
+
+// Iniciar serviço de localização em segundo plano
+async function startBackgroundLocationUpdates() {
+    await Location.startLocationUpdatesAsync('backgroundLocationUpdate', {
+        accuracy: Location.Accuracy.High,
+        showsBackgroundLocationIndicator: true,
+    });
+}
+  
+// Parar serviço de localização em segundo plano
+async function stopBackgroundLocationUpdates() {
+    await Location.stopLocationUpdatesAsync('backgroundLocationUpdate');
+}
+
+const LOCATION_TASK_NAME = 'background-location-task';
+
+const requestPermissions = async () => {
+  const { status: foregroundStatus } = await Location.requestForegroundPermissionsAsync();
+  if (foregroundStatus === 'granted') {
+    const { status: backgroundStatus } = await Location.requestBackgroundPermissionsAsync();
+    if (backgroundStatus === 'granted') {
+      await Location.startLocationUpdatesAsync(LOCATION_TASK_NAME, {
+        accuracy: Location.Accuracy.Balanced,
+      });
+    }
+  }
+};
 
 export default function DetalheRota({ navigation, route }) {
     let idRota = route.params.id;
@@ -19,8 +61,11 @@ export default function DetalheRota({ navigation, route }) {
     let [rota, setRota] = useState({});
     let [latitude, setLatitude] = useState(0);
     let [longitude, setLongitude] = useState(0);
+    let [latitudeUsuario, setLatitudeUsuario] = useState(0);
+    let [longitudeUsuario, setLongitudeUsuario] = useState(0);
     let [direcaoRota, setDirecaoRota] = useState(undefined);
     let [loading, setLoading] = useState(true);
+    let [buscaLocal, setBuscaLocal] = useState("..........");
 
     function decodePolyline(polylineString) {
         var index = 0,
@@ -70,6 +115,43 @@ export default function DetalheRota({ navigation, route }) {
                 setRota(data);
             }
         });
+
+        (async () => {
+            // Solicitar permissão de localização
+            let { status } = await Location.requestForegroundPermissionsAsync();
+            if (status !== 'granted') {
+              console.error('Permissão de localização não concedida');
+              return;
+            }
+      
+            // Iniciar monitoramento contínuo da posição
+            let locationSubscriber = await Location.watchPositionAsync(
+              {
+                accuracy: Location.Accuracy.High, // Alta precisão
+                timeInterval: 100, // Intervalo de atualização (em milissegundos)
+                distanceInterval: 0.01 // Distância mínima de movimento para disparar uma atualização (em metros)
+              },
+              location => {
+                setLatitudeUsuario(location.coords.latitude);
+                setLongitudeUsuario(location.coords.longitude);
+
+                console.log(location.coords.latitude, location.coords.longitude);
+
+                if(buscaLocal == "..........") {
+                    setBuscaLocal("...");
+                } else if (buscaLocal == "...") {
+                    setBuscaLocal("..........");
+                }
+              }
+            );
+      
+            // return () => {
+            //   // Parar de monitorar a posição ao desmontar o componente
+            //   if (locationSubscriber) {
+            //     locationSubscriber.remove();
+            //   }
+            // };
+        })();
 
         // (async () => {
         //     let { status } = await Location.requestForegroundPermissionsAsync();
@@ -164,12 +246,14 @@ export default function DetalheRota({ navigation, route }) {
     }
 
     return (
-        <View>
-            <Text style={styles.descricaoRota}>{rota.descricao}</Text>
+        <View style={styles.container}>
+            <View>
+                <Text style={styles.descricaoRota}>{rota.descricao}</Text>
 
-            {loading == true && (
-                <ActivityIndicator />
-            )}
+                {loading == true && (
+                    <ActivityIndicator />
+                )}
+            </View>
 
             <MapView style={StyleSheet.compose(styles.map, { display: loading == true ? 'hidden' : 'flex' })}
                 ref={mapRef}
@@ -182,12 +266,25 @@ export default function DetalheRota({ navigation, route }) {
 
                 {direcaoRota && (
                     <Polyline
-                        coordinates={direcaoRota}
-                        strokeWidth={4}
-                        strokeColor="blue"
+                    coordinates={direcaoRota}
+                    strokeWidth={4}
+                    strokeColor="blue"
                     />
                 )}
+
+                <Marker
+                    coordinate={{
+                    latitude: latitudeUsuario,
+                    longitude: longitudeUsuario,
+                    }}
+                    title="Minha localização"
+                    description="Aqui estou eu!"
+                />
             </MapView>
+
+            <Text style={styles.descricaoRota}>{latitudeUsuario}</Text>
+            <Text style={styles.descricaoRota}>{longitudeUsuario}</Text>
+            <Text style={styles.descricaoRota}>{buscaLocal}</Text>
         </View>
     )
 }

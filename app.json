@@ -16,7 +16,10 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.viniceosm.RotaCompartilhada2"
+      "bundleIdentifier": "com.viniceosm.RotaCompartilhada2",
+      "infoPlist": {
+        "UIBackgroundModes": ["location", "fetch", "remote-notification"]
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -33,6 +36,20 @@
         "projectId": "6341c564-bd85-4150-86e8-b5737d4e1839"
       }
     },
-    "owner": "viniceosm"
+    "owner": "viniceosm",
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow $(PRODUCT_NAME) to use your location."
+        }
+      ],
+      [
+        "expo-dev-launcher",
+        {
+          "launchModeExperimental": "most-recent"
+        }
+      ]
+    ]
   }
 }

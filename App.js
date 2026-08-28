@@ -1,6 +1,7 @@
 // import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
+import { Button } from 'react-native';
 
 import Rotas from './src/pages/Rotas';
 import NovaRota from './src/pages/NovaRota';
@@ -14,7 +15,15 @@ export default function App() {
       <Stack.Navigator initialRouteName='Rotas'>
         <Stack.Screen
         name='Rotas'
-        component={Rotas}>
+        component={Rotas}
+        options={{
+          headerRight: () => (
+            <Button
+              onPress={() => alert('This is a button!')}
+              title="Login"
+            />
+          )
+        }}>
         </Stack.Screen>
         <Stack.Screen
         name='Nova Rota'
